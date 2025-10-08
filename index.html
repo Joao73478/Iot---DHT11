@@ -4,19 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard IOT</title>
-</head>
-<body>
+
+    <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+   </head>
+   <body>
     <h2>monitoramento DHT11</h2>
     <canvas id="grafico" width="400" height="200"></canvas>
 
     <script>
-        const client = mqtt . connect("wss://broker.hivemq.con:8884/mqtt");
+        const client = mqtt.connect("wss://broker.hivemq.con:8884/mqtt");
 
         const label = [];
         const temData = [];
         const humData = [];
         
-        const ctx = document.getElementById("grafico").getContex("2d");
+        const ctx = document.getElementById("grafico")
+        const chart = new chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {label:"temperatura(°c)", data: tempData, bordercolor: "red" , fill: false },
+                    {label: "umidade (%)", data: humData, borderColor: "blue", fill: false}
+                ]
+            }
+        });
+        client.on("connect", () => {
+  console.log("Conectado ao MQTT");
+  client.subscribe("senai/iot/dht11");
+});
+
+     client.on("message", (topic, message) => {
+     const data = JSON.parse(message.toString());
+     const time = new Date().toLocaleTimeString();
+
+     labels.push(time);
+     tempData.push(data.temperatura);
+     humData.push(data.umidade);
+
+     if (labels.length > 20) {
+      labels.shift();
+      tempData.shift();
+      humData.shift();
+  }
+
+  chart.update();
+});
+    
+        
         
     </script>
 </body>
